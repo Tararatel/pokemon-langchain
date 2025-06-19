@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Поиск покемонов</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .spin {
+        animation: spin 1s linear infinite;
+      }
+      .fade-in {
+        animation: fadeIn 0.3s ease-in;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      body {
+        background-image: url('https://images.unsplash.com/photo-1619468129361-605e90e5cb0c?auto=format&fit=crop&w=1920&q=80');
+        background-size: cover;
+        background-attachment: fixed;
+        background-position: center;
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-screen flex flex-col items-center justify-center font-sans text-gray-800"
+  >
+    <div
+      class="container mx-auto p-4 max-w-5xl bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl my-8"
+    >
+      <header class="text-center mb-8">
+        <h1
+          class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-red-600"
+        >
+          Покемон Finder
+        </h1>
+        <p class="text-lg text-gray-600 mt-2">Найдите своего любимого покемона!</p>
+      </header>
+
+      <main class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section
+          class="bg-white p-6 rounded-xl shadow-lg transition-transform hover:scale-[1.02] duration-300"
+        >
+          <div class="flex items-center mb-4">
+            <label for="pokemonInput" class="text-lg font-semibold text-gray-700 flex-1">
+              Введите имя покемона
+            </label>
+            <button
+              id="clearInput"
+              class="text-gray-500 hover:text-red-600 transition hidden"
+              title="Очистить"
+              onclick="clearInput()"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+          <div class="relative">
+            <input
+              id="pokemonInput"
+              type="text"
+              placeholder="Например, Пикачу или Чучу"
+              class="w-full p-4 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition bg-gray-50 text-gray-800"
+              aria-describedby="pokemonInputHelp"
+            />
+            <svg
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+          <p id="pokemonInputHelp" class="text-sm text-gray-500 mt-2">
+            Введите имя на русском или английском языке.
+          </p>
+          <button
+            id="searchButton"
+            class="mt-4 w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white p-3 rounded-lg hover:from-blue-700 hover:to-blue-900 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            onclick="handleSearch()"
+          >
+            <span id="buttonText">Найти</span>
+            <svg
+              id="loadingSpinner"
+              class="w-5 h-5 text-white hidden spin"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8v-8H4z"
+              />
+            </svg>
+          </button>
+        </section>
+
+        <section class="bg-white p-6 rounded-xl shadow-lg">
+          <h2 class="text-lg font-semibold text-gray-700 mb-4">Результат</h2>
+          <div
+            id="resultOutput"
+            class="w-full h-48 p-4 border border-gray-200 rounded-lg bg-gray-50 overflow-y-auto text-gray-800 whitespace-pre-wrap text-sm"
+            role="region"
+            aria-live="polite"
+          >
+            Введите имя покемона и нажмите "Найти".
+          </div>
+        </section>
+      </main>
+
+      <section class="mt-8 w-full">
+        <h3 class="text-lg font-semibold text-gray-700 mb-4">Последние запросы</h3>
+        <ul
+          id="historyList"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        ></ul>
+      </section>
+    </div>
+
+    <footer class="text-center text-gray-500 text-sm mt-8 mb-4">
+      © 2025 Покемон Finder. Все права защищены.
+    </footer>
+
+    <script>
+      let searchHistory = JSON.parse(localStorage.getItem('pokemonSearchHistory')) || [];
+
+      function updateHistory(name, result) {
+        if (name && result) {
+          searchHistory.unshift({
+            name,
+            result,
+            timestamp: new Date().toLocaleString('ru-RU'),
+          });
+          searchHistory = searchHistory.slice(0, 6);
+          localStorage.setItem('pokemonSearchHistory', JSON.stringify(searchHistory));
+          renderHistory();
+        }
+      }
+
+      function renderHistory() {
+        const historyList = document.getElementById('historyList');
+        historyList.innerHTML = '';
+        searchHistory.forEach((item) => {
+          const li = document.createElement('li');
+          li.className =
+            'bg-gray-100 p-3 rounded-lg text-sm text-gray-700 hover:bg-gray-200 transition fade-in';
+          li.innerHTML = `
+          <span class="font-medium">${item.name}</span><br>
+          ${item.result}<br>
+          <span class="text-xs text-gray-500">${item.timestamp}</span>
+        `;
+          li.addEventListener('click', () => {
+            document.getElementById('pokemonInput').value = item.name;
+            handleSearch();
+          });
+          historyList.appendChild(li);
+        });
+      }
+
+      function clearInput() {
+        const input = document.getElementById('pokemonInput');
+        input.value = '';
+        document.getElementById('clearInput').classList.add('hidden');
+        input.focus();
+      }
+
+      async function handleSearch() {
+        const input = document.getElementById('pokemonInput');
+        const button = document.getElementById('searchButton');
+        const buttonText = document.getElementById('buttonText');
+        const spinner = document.getElementById('loadingSpinner');
+        const output = document.getElementById('resultOutput');
+        const name = input.value.trim();
+
+        if (!name) {
+          output.textContent = 'Пожалуйста, введите имя покемона.';
+          return;
+        }
+
+        button.disabled = true;
+        buttonText.textContent = 'Поиск...';
+        spinner.classList.remove('hidden');
+        output.textContent = 'Загрузка...';
+        output.classList.add('fade-in');
+
+        try {
+          const response = await fetch('/api/pokemon', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Ошибка сервера: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const result = data.result || 'Информация не найдена.';
+          output.textContent = result;
+          updateHistory(name, result);
+        } catch (error) {
+          output.textContent = `Ошибка: ${error.message}`;
+        } finally {
+          button.disabled = false;
+          buttonText.textContent = 'Найти';
+          spinner.classList.add('hidden');
+        }
+      }
+
+      document.getElementById('pokemonInput').addEventListener('input', (e) => {
+        const clearButton = document.getElementById('clearInput');
+        clearButton.classList.toggle('hidden', !e.target.value);
+      });
+
+      document.getElementById('pokemonInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          handleSearch();
+        }
+      });
+
+      renderHistory();
+    </script>
+  </body>
+</html>

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { GigaChat } from 'langchain-gigachat';
 import { ChatOllama } from '@langchain/ollama';
@@ -77,7 +78,7 @@ const workflow = new StateGraph(AgentStateSchema)
             2. Если null или ошибка, используй pokemon_pokeapi_tool с {"name": "${state.normalizedName}"}.
             3. Если null или ошибка, используй pokemon_tavily_tool с {"name": "${state.normalizedName}"}.
             4. Если null или ошибка, используй fallback_tool с {"query": "${state.normalizedName}"}.
-            Формат ответа: "Покемон [имя]: [информация], источник: [источник]".`,
+            Формат ответа: "Покемон [имя]: [подробная информация], источник: [источник]".`,
           ),
           new HumanMessage(`Какая информация о покемоне ${state.normalizedName}`),
         ],
