@@ -28,13 +28,12 @@ export const pokemonPokeApiTool = tool(
       const response = await axios.get(`https://pokeapi.co/api/v2/pokemon/${name}`);
       const { types, height, weight } = response.data;
       const type = types.map((t) => t.type.name).join(', ');
-      // PokeAPI: height в дециметрах, weight в гектограммах
       return `Покемон ${name}: тип - ${type}, рост - ${height * 10} см, вес - ${
         weight / 10
       } кг, источник: PokeAPI`;
     } catch (error) {
       console.log(error.message);
-      return null; // Не найдено, передаём управление следующему инструменту
+      return null;
     }
   },
   {

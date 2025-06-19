@@ -4,7 +4,6 @@ import db from '../../db/models/index.js';
 
 const { Pokemon } = db;
 
-// Схема для инструмента
 const pokemonSchema = z
   .object({
     name: z
@@ -28,13 +27,12 @@ export const pokemonDbTool = tool(
     }
 
     try {
-      // Прямой поиск в базе данных с использованием нормализованного имени
       const pokemon = await Pokemon.findOne({ where: { name } });
       if (pokemon) {
         return `Покемон ${name}: тип - ${pokemon.type}, рост - ${pokemon.height} см, вес - ${pokemon.weight} кг, источник: база данных`;
       }
 
-      return null; // Не найдено, передаём управление следующему инструменту
+      return null;
     } catch (error) {
       return `Ошибка при поиске в базе для ${name}: ${error.message}`;
     }

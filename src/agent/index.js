@@ -11,13 +11,13 @@ import { fallbackTool } from '../tools/fallbackTool.js';
 import { StateGraph } from '@langchain/langgraph';
 import { z } from 'zod';
 
-// Настройка HTTPS-агента
 const httpsAgent = new Agent({
   rejectUnauthorized: false,
 });
 
 process.env.LANGSMITH_TRACING = 'true';
-process.env.LANGSMITH_API_KEY = process.env.LANGSMITH_API_KEY || '<YOUR-LANGSMITH-API-KEY>';
+process.env.LANGSMITH_API_KEY =
+  process.env.LANGSMITH_API_KEY || '<YOUR-LANGSMITH-API-KEY>';
 process.env.LANGSMITH_ENDPOINT = 'https://api.smith.langchain.com';
 process.env.LANGSMITH_PROJECT = 'PokemonGraph';
 
@@ -28,7 +28,6 @@ const localModel = new ChatOllama({
   temperature: 0.1,
 });
 
-// Функция нормализации имени с помощью локальной модели
 async function normalizePokemonName(rawName) {
   console.log(`Попытка нормализации имени: ${rawName}`);
   const prompt = new SystemMessage(
@@ -45,23 +44,19 @@ async function normalizePokemonName(rawName) {
   return response.content.trim().toLowerCase();
 }
 
-// Инициализация модели GigaChat как основного агента
 const agentModel = new GigaChat({
   credentials: process.env.GIGACHAT_KEY,
   model: 'GigaChat-2',
   httpsAgent,
 });
 
-// Инициализация инструментов
 const agentTools = [pokemonDbTool, pokemonPokeApiTool, pokemonTavilyTool, fallbackTool];
 
-// Определение схемы состояния с помощью Zod
 const AgentStateSchema = z.object({
-  messages: z.array(z.any()), // Массив сообщений
-  normalizedName: z.string().optional(), // Нормализованное имя покемона, необязательное поле
+  messages: z.array(z.any()),
+  normalizedName: z.string().optional(),
 });
 
-// Создание графа с прямой передачей схемы
 const workflow = new StateGraph(AgentStateSchema)
   .addNode('normalize', async (state) => {
     const rawName = state.messages[state.messages.length - 1].content.split(' ').pop();
@@ -92,7 +87,7 @@ const workflow = new StateGraph(AgentStateSchema)
     return { ...state, messages: result.messages };
   })
   .addEdge('normalize', 'agent')
-  .setEntryPoint('normalize')
+  .setEntryPoint('normalize');
 
 const app = workflow.compile();
 
